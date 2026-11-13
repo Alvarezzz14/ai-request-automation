@@ -1,0 +1,12 @@
+[
+  {
+    "id": "automation-github",
+    "name": "Automation GitHub",
+    "type": "githubApi",
+    "data": {
+      "server": "http://api:8000",
+      "user": "test-owner",
+      "accessToken": "not-a-real-token"
+    }
+  }
+]

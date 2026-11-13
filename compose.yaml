@@ -1,0 +1,40 @@
+name: ai-request-automation
+services:
+  api:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_PATH: /data/requests.sqlite3
+    ports:
+      - "127.0.0.1:8001:8000"
+    volumes:
+      - api_data:/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 3s
+      timeout: 3s
+      retries: 15
+  n8n:
+    image: docker.n8n.io/n8nio/n8n@sha256:e29e9cc965a16d07d989f115f729f8a1c7aff58688d4850247fa495d4d7aae2f
+    environment:
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:?Configure .env first}
+      N8N_SECURE_COOKIE: "false"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: none
+      EXECUTIONS_DATA_SAVE_ON_ERROR: none
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: "false"
+      AUTOMATION_API_URL: http://api:8000
+      AUTOMATION_API_TOKEN: ${AUTOMATION_API_TOKEN:?Configure .env first}
+      GENERIC_TIMEZONE: America/Bogota
+    ports:
+      - "127.0.0.1:5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./workflows:/workflows:ro
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  api_data:
+  n8n_data:

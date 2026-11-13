@@ -1,0 +1,37 @@
+name: ai-request-automation-smoke
+services:
+  api:
+    build:
+      context: ..
+    command: ["uvicorn", "tests.workflow_fixture:create_app", "--factory", "--host", "0.0.0.0", "--port", "8000"]
+    ports:
+      - "127.0.0.1:8002:8000"
+  n8n:
+    image: docker.n8n.io/n8nio/n8n@sha256:e29e9cc965a16d07d989f115f729f8a1c7aff58688d4850247fa495d4d7aae2f
+    entrypoint: ["sh", "-c"]
+    command:
+      - >-
+        n8n import:credentials --input=/fixtures/github.json &&
+        n8n import:workflow --separate --input=/workflows &&
+        n8n publish:workflow --id=aiRequestsIntake1 &&
+        n8n publish:workflow --id=aiRequestsReview1 &&
+        exec n8n start
+    environment:
+      N8N_ENCRYPTION_KEY: fixture-encryption-key-not-a-real-secret
+      N8N_SECURE_COOKIE: "false"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+      EXECUTIONS_DATA_SAVE_ON_SUCCESS: none
+      EXECUTIONS_DATA_SAVE_ON_ERROR: none
+      EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS: "false"
+      AUTOMATION_API_URL: http://api:8000
+      AUTOMATION_API_TOKEN: fixture-api
+    tmpfs:
+      - /home/node/.n8n:uid=1000,gid=1000
+    ports:
+      - "127.0.0.1:5679:5678"
+    volumes:
+      - ../workflows:/workflows:ro
+      - ./github-fixture.json:/fixtures/github.json:ro
+    depends_on:
+      - api
